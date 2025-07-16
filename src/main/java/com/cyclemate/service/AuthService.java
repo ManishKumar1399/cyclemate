@@ -26,7 +26,11 @@ public class AuthService {
         );
 
         // If auth succeeds, generate token
-        String token = jwtUtil.generateToken(loginDTO.getEmail());
-        return new LoginResponseDTO(token);
+        String username = loginDTO.getEmail();
+
+        String token = jwtUtil.generateToken(username);
+        String refreshToken = jwtUtil.generateRefreshToken(username);
+
+        return new LoginResponseDTO(token, refreshToken);
     }
 }

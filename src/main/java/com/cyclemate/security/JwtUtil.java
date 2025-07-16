@@ -13,7 +13,7 @@ import java.util.Date;
 public class JwtUtil {
 
     private final String secret= "YourSuperSecretKeyThatShouldBeLongEnough123456";
-    private final long jwtExpirationMs= 86400000;
+    private final long jwtExpirationMs= 1000 * 60 * 60 * 24 * 7;
 
     private Key getSignKey() {
         return Keys.hmacShaKeyFor(secret.getBytes());
@@ -42,4 +42,16 @@ public class JwtUtil {
             return false;
         }
     }
+    // JwtUtil.java
+
+    public String generateRefreshToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000)) // 7 days
+                .signWith(SignatureAlgorithm.HS256, secret)
+                .compact();
+    }
+
+
 }

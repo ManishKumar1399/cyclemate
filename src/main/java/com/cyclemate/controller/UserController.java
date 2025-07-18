@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -44,11 +45,29 @@ public class UserController {
     public Optional<User> getUserById(@PathVariable Long id) {
         return userRepository.findById(id);
     }
+    @PutMapping("/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
+        return userRepository.findById(id).map(user -> {
+            user.setName(updatedUser.getName());
+            user.setAge(updatedUser.getAge());
+            user.setWeight(updatedUser.getWeight());
+            return ResponseEntity.ok(userRepository.save(user));
+        }).orElse(ResponseEntity.notFound().build());
+    }
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
+        return userRepository.findById(id).map(user -> {
+            userRepository.delete(user);
+            return ResponseEntity.ok().build();
+        }).orElse(ResponseEntity.notFound().build());
+    }
+
     @PostMapping("/register")
     public ResponseEntity<UserResponseDTO> registerUser(@RequestBody UserRequestDTO userRequestDTO) {
         UserResponseDTO responseDTO = userService.registerUser(userRequestDTO);
         return new ResponseEntity<>(responseDTO, HttpStatus.CREATED);
     }
+
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginRequestDTO request) {
         return ResponseEntity.ok(authService.login(request));
@@ -65,8 +84,11 @@ public class UserController {
                 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid refresh token");
             }
 
-            UserDetails userDetails = userService.loadUserByUsername(username);
-            String newAccessToken = jwtUtil.generateToken(userDetails.getUsername());
+//            UserDetails userDetails = userService.loadUserByUsername(username);
+            // Get full User object (not just UserDetails)
+            User user = userRepository.findByEmail(username)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+            String newAccessToken = jwtUtil.generateToken(user);
 
             return ResponseEntity.ok(Collections.singletonMap("token", newAccessToken));
 

@@ -30,4 +30,8 @@ public class User {
     private Double weight;
 
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    private boolean isActive = true;
+
+    private String roles = "ROLE_USER";
 }

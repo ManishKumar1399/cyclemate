@@ -9,6 +9,8 @@ import org.springframework.security.core.userdetails.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService implements UserDetailsService {
@@ -27,6 +29,7 @@ public class UserService implements UserDetailsService {
         user.setPassword(passwordEncoder.encode(userDTO.getPassword()));
         user.setAge(userDTO.getAge());
         user.setWeight(userDTO.getWeight());
+        user.setRoles("ROLE_USER");
 
         User saved = userRepository.save(user);
 
@@ -41,7 +44,23 @@ public class UserService implements UserDetailsService {
         return org.springframework.security.core.userdetails.User.builder()
                 .username(user.getEmail())
                 .password(user.getPassword())
-                .roles("USER")
+                .roles(user.getRoles().split(","))
                 .build();
+    }
+
+    public List<User> getAllUsers() {
+        return userRepository.findAll();
+    }
+
+    public void disableUser(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setActive(false);
+        userRepository.save(user);
+    }
+
+    public void enableUser(Long userId) {
+        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        user.setActive(true);
+        userRepository.save(user);
     }
 }

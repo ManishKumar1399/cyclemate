@@ -1,12 +1,13 @@
 package com.cyclemate.controller;
 
+import com.cyclemate.exception.RouteNotFoundException;
 import com.cyclemate.model.Route;
 import com.cyclemate.model.User;
 import com.cyclemate.repository.RouteRepository;
 import com.cyclemate.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -21,49 +22,34 @@ public class RouteController {
     private final RouteRepository routeRepository;
     private final UserRepository userRepository;
 
-//    @GetMapping
-//    public List<Route> getAllRoutes() {
-//        return routeRepository.findAll();
-//    }
     @GetMapping
     public ResponseEntity<List<Route>> getUserRoutes(Principal principal) {
         String email = principal.getName();
-        User user = userRepository.findByEmail(email).orElseThrow();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with email: " + email));
         return ResponseEntity.ok(routeRepository.findByCreatedBy(user));
     }
 
-//    @PostMapping
-//    public Route createRoute(@RequestBody Route route) {
-//        return routeRepository.save(route);
-//    }
     @PostMapping
     public ResponseEntity<Route> createRoute(@RequestBody Route route, @RequestParam Long userId) {
-        User user = userRepository.findById(userId).orElseThrow(() -> new RuntimeException("User not found"));
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found with id: " + userId));
         route.setCreatedBy(user);
         return ResponseEntity.ok(routeRepository.save(route));
     }
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User updatedUser) {
-        return userRepository.findById(id).map(user -> {
-            user.setName(updatedUser.getName());
-            user.setAge(updatedUser.getAge());
-            user.setWeight(updatedUser.getWeight());
-            return ResponseEntity.ok(userRepository.save(user));
-        }).orElse(ResponseEntity.notFound().build());
-    }
+
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Long id) {
-        return userRepository.findById(id).map(user -> {
-            userRepository.delete(user);
+    public ResponseEntity<?> deleteRoute(@PathVariable Long id) {
+        return routeRepository.findById(id).map(route -> {
+            routeRepository.delete(route);
             return ResponseEntity.ok().build();
-        }).orElse(ResponseEntity.notFound().build());
+        }).orElseThrow(() -> new RouteNotFoundException("Route not found with id: " + id));
     }
-
-
-
 
     @GetMapping("/{id}")
-    public Optional<Route> getRoute(@PathVariable Long id) {
-        return routeRepository.findById(id);
+    public ResponseEntity<Route> getRoute(@PathVariable Long id) {
+        Route route = routeRepository.findById(id)
+                .orElseThrow(() -> new RouteNotFoundException("Route not found with id: " + id));
+        return ResponseEntity.ok(route);
     }
 }
